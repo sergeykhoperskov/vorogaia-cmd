@@ -79,8 +79,9 @@ def get_binary_ssp(model):
             df.to_hdf(fn2,key='ssp2')
         else:
             print('Need to generate SSP file')
-        
-    model.df_ssp2 = pd.read_hdf(fn2)
+            sys.exit(1)
+            
+    return pd.read_hdf(fn2)
         
             
 def populate_isochrones(model):
@@ -118,8 +119,7 @@ def populate_isochrones(model):
         print('No Gaia CMD and grid are available')
         sys.exit(1)
     
-    get_binary_ssp(model)
-    print(model.df_ssp2)
+    df_ssp2 = get_binary_ssp(model)
 
     mn = 'mn'+\
             '.SN' + model.parameters['CMD_grid']['sn']+\
@@ -147,8 +147,6 @@ def populate_isochrones(model):
     pts = model.pts_df[['pts_x', 'pts_y']].to_numpy()
     
     progress_bar = tqdm(total=len(grid), desc="Processing")
-
-    df_ssp2 = model.df_ssp2.copy()
     
     for lab,age,met in zip(grid['labels'],grid['ages'],grid['mets']):
         progress_bar.update(1)
