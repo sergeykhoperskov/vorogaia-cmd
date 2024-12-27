@@ -147,8 +147,10 @@ def populate_isochrones(model):
     pts = model.pts_df[['pts_x', 'pts_y']].to_numpy()
     
     progress_bar = tqdm(total=len(grid), desc="Processing")
-    
+
+    o=-1
     for lab,age,met in zip(grid['labels'],grid['ages'],grid['mets']):
+        o=o+1
         progress_bar.update(1)
         print(lab)
         if '/'+lab in keys:
@@ -158,31 +160,34 @@ def populate_isochrones(model):
             
         df = pd.read_hdf(fn,key=lab,mode='a')
         gmag, bprp, mass_ratio = interpolate_magnitudes(df,df_ssp2,float(model.parameters['SSP']['phot_err']))
+
         zz = make_vor_density(pts,bprp,gmag)
 
         dftmp['zz'] = zz
 
         dftmp.to_hdf(fno,key=lab)
         
-        
-        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-        tit = 'Age = '+str(int(age*100)/100)+'  Gyr   Z = '+str(int(met*100)/100)
-        
-        plot_vor_density2(axes[0],pts,zz,[0.001*zz.max(),zz.max()],tit, scale='log')
-
-        ind = df['Gmag']<5
-        axes[0].plot(df['G_BPmag'][ind]-df['G_RPmag'][ind], df['Gmag'][ind], c='k', linewidth=2)        
-
-        tit = ' binary fraction = '+model.parameters['SSP']['binary_frac']
-        plot_vor_density2(axes[1],pts,zz*np.nan,[0,1],tit, scale='lin')
-        tpc=axes[1].scatter(bprp, gmag, c=mass_ratio, linewidth=1, alpha=1, marker='.', s=2,cmap=myjet())            
-        axes[1].set_xlim(-0.5,2.5)
-        axes[1].set_ylim(-5,5)
-        plt.gca().invert_yaxis()         
-        axes[1].set_xlabel("BP-RP [mag]", fontsize=14)
-        axes[1].set_ylabel("Gmag [mag]", fontsize=14)
-        # cbar = plt.colorbar(tpc, ax=axes[1])
-
-        plt.savefig(model.parameters['General']['path']+'/figs/'+mn+'/isochrone.'+lab+'.jpg') 
-        plt.close()
+        if o%int(model.parameters['AMR_grid']['save_isochrone_figs'])==0:
+            
+            
+            fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+            tit = 'Age = '+str(int(age*100)/100)+'  Gyr   Z = '+str(int(met*100)/100)
+            
+            plot_vor_density2(axes[0],pts,zz,[0.001*zz.max(),zz.max()],tit, scale='log')
+    
+            ind = df['Gmag']<5
+            axes[0].plot(df['G_BPmag'][ind]-df['G_RPmag'][ind], df['Gmag'][ind], c='k', linewidth=2)        
+    
+            tit = ' binary fraction = '+model.parameters['SSP']['binary_frac']
+            plot_vor_density2(axes[1],pts,zz*np.nan,[0,1],tit, scale='lin')
+            tpc=axes[1].scatter(bprp, gmag, c=mass_ratio, linewidth=1, alpha=1, marker='.', s=2,cmap=myjet())            
+            axes[1].set_xlim(-0.5,2.5)
+            axes[1].set_ylim(-5,5)
+            plt.gca().invert_yaxis()         
+            axes[1].set_xlabel("BP-RP [mag]", fontsize=14)
+            axes[1].set_ylabel("Gmag [mag]", fontsize=14)
+            # cbar = plt.colorbar(tpc, ax=axes[1])
+    
+            plt.savefig(model.parameters['General']['path']+'/figs/'+mn+'/isochrone.'+lab+'.jpg') 
+            plt.close()
 

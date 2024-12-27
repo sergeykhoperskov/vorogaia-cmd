@@ -24,7 +24,7 @@ def main(config_file_name):
     model.populate_isochrones()
     
     # make a fit
-    model.fit_cmd()
+    # model.fit_cmd()
 
 
 if __name__ == "__main__":
