@@ -108,6 +108,7 @@ def fit_cmd(model):
     pts_x,pts_y,gaia_cmd = read_cmd_to_fit(model)
 
     if model.parameters['Fitting']['initial_guess']=='none':     
+        print('Uniform initial guess')
         w0 = AGE/AGE
         e_w0 = np.exp(w0)
         test_CMD = isochrones.T @ e_w0
@@ -115,8 +116,14 @@ def fit_cmd(model):
         test_CMD = isochrones.T @ e_w0
         w0 = np.log(e_w0)
     else:
-        w0 = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key='blah')
+        with pd.HDFStore(model.parameters['Fitting']['initial_guess'], mode='r') as store:
+            keys = store.keys()        
 
+        print('Will use an initial guess from ',model.parameters['Fitting']['initial_guess'],'iteration',keys[-1])
+        a = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key=keys[-1])
+        w0 = a['w'].values
+        test_CMD = isochrones.T @ np.exp(w0)
+    
     figname_out = figname_out0+'.initial.jpg' 
 
     plot_solution(pts_x, pts_y, gaia_cmd, test_CMD,AGE,MET,w0,w0,[0],figname_out)
@@ -129,11 +136,13 @@ def fit_cmd(model):
     nsave = int(model.parameters['Fitting']['nsave'])
     hist = []
     
+
+    eps = float(model.parameters['Fitting']['eps'])
     
     for i in range(0,int(model.parameters['Fitting']['max_step'])):
         print(model.parameters['Fitting']['model_name']+'.'+date_time_str,'running iteration ',i,' out of ',model.parameters['Fitting']['max_step'])
         figname_out = figname_out0 +'.'+ str(i).zfill(7)+'.jpg'
-        current_weights,hist0 = solver(pts_x, pts_y, isochrones2.T, w0, gaia_cmd, 1, nsave,fittype=model.parameters['Fitting']['fittype'])
+        current_weights,hist0 = solver(pts_x, pts_y, isochrones2.T, w0, gaia_cmd, eps, nsave,fittype=model.parameters['Fitting']['fittype'])
         hist.extend(hist0)
         plot_solution(pts_x, pts_y, gaia_cmd, isochrones2.T @ np.exp(current_weights),AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out)
         save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd,w0,current_weights,isochrones2,AGE,MET)

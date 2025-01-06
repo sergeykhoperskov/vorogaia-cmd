@@ -4,7 +4,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import matplotlib.cm as cm
-
+import pandas as pd
 import matplotlib.tri as tri
 
 from scipy.spatial import cKDTree
@@ -133,7 +133,7 @@ def make_voronoi(xx,yy, x0,y0, SCALE=1e6, targetSN=10):
     return pts
 
 
-def make_vor_density(pts,x0,y0):
+def make_vor_density(pts,x0,y0,m=[]):
 
     nv = len(pts[:,0])
 
@@ -141,13 +141,19 @@ def make_vor_density(pts,x0,y0):
     kdtree = cKDTree(pts)
     test_point_dist, test_point_regions = kdtree.query(np.vstack((x0,y0)).T)
 
-    val, num = np.unique(test_point_regions, return_counts=True)
-
+    
     zz = np.zeros(nv).copy()*0
-    zz[val] = num
+    if len(m)==len(x0):
+        unique_values = np.unique(test_point_regions)
+        indexes_dict = {val: np.where(test_point_regions == val)[0] for val in unique_values}
+    
+        for val, indexes in indexes_dict.items():
+            zz[val] = np.sum(m[indexes])
+    else:
+        val, num = np.unique(test_point_regions, return_counts=True)
+        zz[val] = num
 
     return zz
-
 
 def plot_vor_density2(ax,pts,zz,vals,tit,scale='log'):
 
@@ -205,6 +211,12 @@ def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
         
     tpc = axes[1, 1].tripcolor(triang, np.log10(w1), shading='flat', cmap=myjet())
     cbar = plt.colorbar(tpc, ax=axes[1, 1])
+
+    data = pd.DataFrame({'age': age, 'weight': w1})
+    summed_weights = data.groupby('age')['weight'].sum().reset_index()
+    values = summed_weights['weight']/np.max(summed_weights['weight'])-2
+    
+    axes[1,1].plot(summed_weights['age'].values,values,c='k',linewidth=3)
     axes[1,1].set_xlim(0,13)
     axes[1,1].set_ylim(-2,0.5)
     axes[1, 1].set_xlabel('Age [Gyr]', fontsize=14)
@@ -288,4 +300,19 @@ def solver(pts_x,pts_y, X, m_stat, y, eps, max_counter,fittype='abs'):
             hist.append(err)        
                        
     return m_stat, hist
+
+def nbt2den(x,y,z,x1,x2,y1,y2,n1,n2):
+    xx = np.linspace(x1,x2,n1+1)
+    yy = np.linspace(y1,y2,n2+1)
+    
+    if len(z)<len(x):
+        zz,xx,yy = np.histogram2d(x,y,bins=[xx,yy])
+    else:
+        # z = np.reshape(z,len(z))
+        zz,xx,yy = np.histogram2d(x,y,bins=[xx,yy],weights=z)
+
+    xx = (xx[:-1] + xx[1:]) / 2
+    yy = (yy[:-1] + yy[1:]) / 2
+    
+    return xx,yy,zz.T
 
