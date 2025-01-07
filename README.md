@@ -1,9 +1,14 @@
 # Here is the readme file
 
-Requirements:
+Requirements
+
 ezpadova - download PADOVA isochrones
 pip install git+https://github.com/mfouesneau/ezpadova
 
-Usage 
+vorbin - package for voronoi binning
+pip install vorbin
+
+Usage:
+
 python main.py <config_file_name>
 
