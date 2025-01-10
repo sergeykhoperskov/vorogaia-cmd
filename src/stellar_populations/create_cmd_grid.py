@@ -58,6 +58,6 @@ def create_cmd_grid(model):
     plt.savefig(model.parameters['General']['path']+'/figs/_cmds_to_fit/gaia3_cmd_full_all_voron.SN.'+\
                   model.parameters['CMD_grid']['sn']+'.SCALE.'+model.parameters['CMD_grid']['scale']+'.jpg')
 
-    plt.show()
-    plt.close()
+#    plt.show()
+#    plt.close()
 

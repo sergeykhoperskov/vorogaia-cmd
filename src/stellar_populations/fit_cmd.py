@@ -11,21 +11,23 @@ warnings.filterwarnings("ignore")
 
 
 def read_isochrones(model):
-    file_mask = \
-    model.parameters['AMR_grid']['age_scale']+'.a'+ \
-    model.parameters['AMR_grid']['age_min']+'.a'+ \
-    model.parameters['AMR_grid']['age_max']+'.n'+ \
-    model.parameters['AMR_grid']['n_age']+'.met.'+ \
-    model.parameters['AMR_grid']['met_scale']+'.m'+ \
-    model.parameters['AMR_grid']['met_min']+'.m'+ \
-    model.parameters['AMR_grid']['met_max']+'.n'+ \
-    model.parameters['AMR_grid']['n_met'] +'.bf'+ \
-    model.parameters['SSP']['binary_frac'] +'.phot_err'+ \
-    model.parameters['SSP']['phot_err']+ '.SN' + \
-    model.parameters['CMD_grid']['sn']+'.SCALE.' + \
-    model.parameters['CMD_grid']['scale']+'.h5'
+    # file_mask = \
+    # model.parameters['AMR_grid']['age_scale']+'.a'+ \
+    # model.parameters['AMR_grid']['age_min']+'.a'+ \
+    # model.parameters['AMR_grid']['age_max']+'.n'+ \
+    # model.parameters['AMR_grid']['n_age']+'.met.'+ \
+    # model.parameters['AMR_grid']['met_scale']+'.m'+ \
+    # model.parameters['AMR_grid']['met_min']+'.m'+ \
+    # model.parameters['AMR_grid']['met_max']+'.n'+ \
+    # model.parameters['AMR_grid']['n_met'] +'.bf'+ \
+    # model.parameters['SSP']['binary_frac'] +'.phot_err'+ \
+    # model.parameters['SSP']['phot_err']+ '.SN' + \
+    # model.parameters['CMD_grid']['sn']+'.SCALE.' + \
+    # model.parameters['CMD_grid']['scale']+'.h5'
 
-    fn = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
+    # fn = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
+    
+    fn = model.isochrones_sampled_file_name
     
     with pd.HDFStore(fn, mode='r') as store:
         keys = store.keys()

@@ -37,7 +37,27 @@ class StellarPopulationModel:
                 self.parameters[section][key] = value
 
         self.config_file_name = config_file
+
+        file_mask = \
+            self.parameters['AMR_grid']['age_scale']+'.a'+ \
+            self.parameters['AMR_grid']['age_min']+'.a'+ \
+            self.parameters['AMR_grid']['age_max']+'.n'+ \
+            self.parameters['AMR_grid']['n_age']+'.met.'+ \
+            self.parameters['AMR_grid']['met_scale']+'.m'+ \
+            self.parameters['AMR_grid']['met_min']+'.m'+ \
+            self.parameters['AMR_grid']['met_max']+'.n'+ \
+            self.parameters['AMR_grid']['n_met']
+        
+        self.isochrones_download_file_name = self.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask + '.h5'
+        self.isochrones_sampled_file_name = self.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask + \
+        '.bf'+self.parameters['SSP']['binary_frac']+ \
+        '.phot_err'+self.parameters['SSP']['phot_err'] + \
+        '.SN' + self.parameters['CMD_grid']['sn'] + \
+        '.SCALE.' + self.parameters['CMD_grid']['scale'] + \
+        '.'+self.parameters['SSP']['imf_type']+self.parameters['SSP']['ssp_mass']+'.h5'
     
+        # asdfasdfasdf
+        
     # # Define methods as placeholders to call external implementations
     def initialize_ssp(self):
         initialize_ssp(self)
