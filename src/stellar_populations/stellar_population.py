@@ -17,7 +17,8 @@ class StellarPopulationModel:
     def __init__(self):
         """Initialize the StellarPopulationModel class."""
         self.parameters = {}
-
+        self.config_file_name = ''
+        
         # self.pts_df = pd.DataFrame()
         # self.df_gaia = pd.DataFrame()
         
@@ -35,6 +36,8 @@ class StellarPopulationModel:
             for key, value in config.items(section):
                 self.parameters[section][key] = value
 
+        self.config_file_name = config_file
+    
     # # Define methods as placeholders to call external implementations
     def initialize_ssp(self):
         initialize_ssp(self)

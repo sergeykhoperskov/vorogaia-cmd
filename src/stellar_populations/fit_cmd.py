@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from tools import file_exists, mkdir, make_voronoi, myjet, make_vor_density, plot_vor_density2, plot_solution, solver
+from tools import file_exists, mkdir, make_voronoi, myjet, make_vor_density, plot_vor_density2, plot_solution, solver, copy_file
 
 from datetime import datetime
 import warnings
@@ -19,7 +19,11 @@ def read_isochrones(model):
     model.parameters['AMR_grid']['met_scale']+'.m'+ \
     model.parameters['AMR_grid']['met_min']+'.m'+ \
     model.parameters['AMR_grid']['met_max']+'.n'+ \
-    model.parameters['AMR_grid']['n_met'] +'.phot_err'+model.parameters['SSP']['phot_err'] +'.h5'
+    model.parameters['AMR_grid']['n_met'] +'.bf'+ \
+    model.parameters['SSP']['binary_frac'] +'.phot_err'+ \
+    model.parameters['SSP']['phot_err']+ '.SN' + \
+    model.parameters['CMD_grid']['sn']+'.SCALE.' + \
+    model.parameters['CMD_grid']['scale']+'.h5'
 
     fn = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
     
@@ -86,6 +90,7 @@ def save_solution(iter, parameters,fnout,pts_x,pts_y,gaia_CMD_to_fit,w0,weights,
     sol = pd.DataFrame(isochrones2)
     sol.to_hdf(fnout,key='isochrones')
 
+    
 
 def fit_cmd(model):
     now = datetime.now()    
@@ -93,10 +98,12 @@ def fit_cmd(model):
 
     fn0 = model.parameters['General']['path']+'/figs/'+model.parameters['Fitting']['model_name']+'.'+date_time_str
     fn1 = model.parameters['General']['path']+'/results/'+model.parameters['Fitting']['model_name']+'.'+date_time_str
+
     
     mkdir(model.parameters['General']['path']+'/figs/')
     mkdir(fn0)
     mkdir(fn1)
+    copy_file(model.config_file_name,fn1)
 
     figname_out0 = fn0+'/solution'+date_time_str 
     sol_file_name = fn1+'/solution'+date_time_str+'.h5'

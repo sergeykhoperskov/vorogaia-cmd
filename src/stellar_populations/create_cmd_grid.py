@@ -52,8 +52,12 @@ def create_cmd_grid(model):
                       model.pts_df['dat'],[1e-3*model.pts_df['dat'].max(),model.pts_df['dat'].max()],
                       'Gaia CMD',scale='log')
     plt.title(model.parameters['CMD_grid']['gaia_file'])
-    plt.savefig(model.parameters['General']['path']+'/figs/gaia3_cmd_full_all_voron.SN.'+\
+    
+    mkdir(model.parameters['General']['path']+'/figs/_cmds_to_fit/')
+    
+    plt.savefig(model.parameters['General']['path']+'/figs/_cmds_to_fit/gaia3_cmd_full_all_voron.SN.'+\
                   model.parameters['CMD_grid']['sn']+'.SCALE.'+model.parameters['CMD_grid']['scale']+'.jpg')
 
-    
+    plt.show()
+    plt.close()
 

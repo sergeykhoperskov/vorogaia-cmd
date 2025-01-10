@@ -50,7 +50,13 @@ def myjet(m=256):
         }
 
     return mpl.colors.LinearSegmentedColormap('myjet', cdict1, m)
+
+def copy_file(file, destination):
+    print('copy file',file,' to ',destination)
     
+    os.system('cp '+ file + ' ' + destination + '/')
+
+
 def file_exists(file_path):
     if os.path.exists(file_path):
         # print(f"The file '{file_path}' exists.")

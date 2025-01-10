@@ -98,7 +98,10 @@ def populate_isochrones(model):
     model.parameters['AMR_grid']['n_met']
 
     fn = model.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask +'.h5'
-    fno = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask +'.phot_err'+model.parameters['SSP']['phot_err']+'.h5'
+    fno = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ \
+    file_mask+'.bf'+model.parameters['SSP']['binary_frac'] +'.phot_err'+model.parameters['SSP']['phot_err']+\
+    '.SN' + model.parameters['CMD_grid']['sn']+\
+    '.SCALE.' + model.parameters['CMD_grid']['scale']+'.h5'
 
     mkdir(model.parameters['General']['path']+'/dat/isochrones_sampled')
     
