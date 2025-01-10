@@ -1,0 +1,8 @@
+*.ipynb
+.DS_store
+*.sh
+figs
+results
+dat
+.ipynb_checkpoints
+__pycache__
