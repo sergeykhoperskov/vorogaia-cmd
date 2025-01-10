@@ -11,22 +11,7 @@ warnings.filterwarnings("ignore")
 
 
 def read_isochrones(model):
-    # file_mask = \
-    # model.parameters['AMR_grid']['age_scale']+'.a'+ \
-    # model.parameters['AMR_grid']['age_min']+'.a'+ \
-    # model.parameters['AMR_grid']['age_max']+'.n'+ \
-    # model.parameters['AMR_grid']['n_age']+'.met.'+ \
-    # model.parameters['AMR_grid']['met_scale']+'.m'+ \
-    # model.parameters['AMR_grid']['met_min']+'.m'+ \
-    # model.parameters['AMR_grid']['met_max']+'.n'+ \
-    # model.parameters['AMR_grid']['n_met'] +'.bf'+ \
-    # model.parameters['SSP']['binary_frac'] +'.phot_err'+ \
-    # model.parameters['SSP']['phot_err']+ '.SN' + \
-    # model.parameters['CMD_grid']['sn']+'.SCALE.' + \
-    # model.parameters['CMD_grid']['scale']+'.h5'
 
-    # fn = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
-    
     fn = model.isochrones_sampled_file_name
     
     with pd.HDFStore(fn, mode='r') as store:
@@ -63,6 +48,8 @@ def read_cmd_to_fit(model):
 
         tmp = pd.read_hdf(fn,key='dat')
 
+        print('Size of the CMD:',len(tmp))
+        
         return tmp['pts_x'].values,tmp['pts_y'].values,tmp['dat'].values/tmp['dat'].values.sum()*len(tmp['dat'])
     else:
         print('ERROR, no CMD to fit')
@@ -95,6 +82,22 @@ def save_solution(iter, parameters,fnout,pts_x,pts_y,gaia_CMD_to_fit,w0,weights,
     
 
 def fit_cmd(model):
+    print('\n ###############################################################')
+    print('    Fitting routine starting')
+    print(' ###############################################################\n')
+
+    isochrones, AGE, MET = read_isochrones(model)
+
+    all_isochrones = np.sum(isochrones, axis=0)
+
+    pts_x,pts_y,gaia_cmd = read_cmd_to_fit(model)
+
+    if len(gaia_cmd) == isochrones.shape[1]:
+        print('CMD size and isochrones size match')
+    else:        
+        print('CMD size ',len(gaia_cmd),' and isochrones size',isochrones.shape[1],'do not match. Exit now!')
+        return
+    
     now = datetime.now()    
     date_time_str = now.strftime("%Y_%m_%d_%H_%M_%S")
 
@@ -109,13 +112,7 @@ def fit_cmd(model):
 
     figname_out0 = fn0+'/solution'+date_time_str 
     sol_file_name = fn1+'/solution'+date_time_str+'.h5'
-    
-    isochrones, AGE, MET = read_isochrones(model)
-
-    all_isochrones = np.sum(isochrones, axis=0)
-
-    pts_x,pts_y,gaia_cmd = read_cmd_to_fit(model)
-
+        
     if model.parameters['Fitting']['initial_guess']=='none':     
         print('Uniform initial guess')
         w0 = AGE/AGE
@@ -130,7 +127,7 @@ def fit_cmd(model):
             keys = store.keys()        
 
         print('Will use an initial guess from ',model.parameters['Fitting']['initial_guess'],'iteration',keys[-1])
-        a = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key=keys[-1])
+        a = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key='sol'+str(len(keys)-2))#keys[-1])
         w0 = a['w'].values
         test_CMD = isochrones.T @ np.exp(w0)
     
@@ -138,7 +135,7 @@ def fit_cmd(model):
 
     plot_solution(pts_x, pts_y, gaia_cmd, test_CMD,AGE,MET,w0,w0,[0],figname_out)
 
-    ind = (all_isochrones==0) | (gaia_cmd/gaia_cmd.max()< 1e-3)
+    ind = (all_isochrones==0) | (gaia_cmd/gaia_cmd.max()< 1e-4)
     gaia_cmd[ind] = 0
     isochrones2 = isochrones.copy()
     isochrones2[:,ind] = 0

@@ -85,27 +85,13 @@ def get_binary_ssp(model):
         
             
 def populate_isochrones(model):
-    tracemalloc.start()
+    print('\n #########################################################################################')
+    print('    Sampling isochrones onto voronoi grid with binary fraction and photometric errors ')
+    print(' #########################################################################################\n')
     
-    # file_mask = \
-    # model.parameters['AMR_grid']['age_scale']+'.a'+ \
-    # model.parameters['AMR_grid']['age_min']+'.a'+ \
-    # model.parameters['AMR_grid']['age_max']+'.n'+ \
-    # model.parameters['AMR_grid']['n_age']+'.met.'+ \
-    # model.parameters['AMR_grid']['met_scale']+'.m'+ \
-    # model.parameters['AMR_grid']['met_min']+'.m'+ \
-    # model.parameters['AMR_grid']['met_max']+'.n'+ \
-    # model.parameters['AMR_grid']['n_met']
-
     fn = model.isochrones_download_file_name
     fno = model.isochrones_sampled_file_name
     
-    # fn = model.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask +'.h5'
-    # fno = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ \
-    # file_mask+'.bf'+model.parameters['SSP']['binary_frac'] +'.phot_err'+model.parameters['SSP']['phot_err']+\
-    # '.SN' + model.parameters['CMD_grid']['sn']+\
-    # '.SCALE.' + model.parameters['CMD_grid']['scale']+'.h5'
-
     mkdir(model.parameters['General']['path']+'/dat/isochrones_sampled')
     
     file_is_ready = check_isochrones(fn)
@@ -144,7 +130,7 @@ def populate_isochrones(model):
     else:
         keys = []
 
-    print(keys)
+    # print(keys)
     
     grid.to_hdf(fno,key='grid',mode='a')
     model.pts_df.to_hdf(fno,key='grid_cmd',mode='a')
@@ -152,8 +138,16 @@ def populate_isochrones(model):
     dftmp = pd.DataFrame()
     pts = model.pts_df[['pts_x', 'pts_y']].to_numpy()
     
-    progress_bar = tqdm(total=len(grid), desc="Processing")
+    
+    if len(grid) == len(keys)-2:
+        print('Number of isochrones needed',len(grid))
+        print('Number of isochrones in the file',len(keys)-2)
+        print('All isochrones are in the file')
+        
+        return
 
+    progress_bar = tqdm(total=len(grid), desc="Processing")
+    
     o=-1
     for lab,age,met in zip(grid['labels'],grid['ages'],grid['mets']):
         o=o+1

@@ -5,7 +5,10 @@ from tools import file_exists, mkdir, make_voronoi, myjet, make_vor_density, plo
 
 
 def create_cmd_grid(model):
-
+    print('\n ######################################')
+    print('    Reading/writing CMD to fit ')
+    print(' ########################################\n')
+    
     fno = model.parameters['General']['path']+'/dat/cmd_grid/gaia3_cmd_full_all_voron.SN.'+\
           model.parameters['CMD_grid']['sn']+'.SCALE.'+model.parameters['CMD_grid']['scale']+'.h5'
 

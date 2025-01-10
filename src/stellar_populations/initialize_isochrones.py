@@ -8,6 +8,11 @@ from IPython.display import clear_output
 
 
 def initialize_isochrones(model):
+    print('\n ###############################################################')
+    print('    Checking PADOVA isochrones file')
+    print(' ###############################################################\n')
+
+    
     fn = model.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ \
     model.parameters['AMR_grid']['age_scale']+'.a'+ \
     model.parameters['AMR_grid']['age_min']+'.a'+ \
@@ -89,9 +94,16 @@ def initialize_isochrones(model):
         
         print('Age-Met grid saved to a new file',fn)
 
+
+    if len(grid) == len(keys)-1:
+        print('Number of raw isochrones needed',len(grid))
+        print('Number of raw isochrones in the file',len(keys)-1)
+        print('All isochrones are in the file')
+        
+        return
+
     progress_bar = tqdm(total=len(grid), desc="Processing")
 
-   
     for age,met,lab in (zip(grid['ages_u'],grid['mets_u'],grid['labels'])):
         progress_bar.update(1)
 
