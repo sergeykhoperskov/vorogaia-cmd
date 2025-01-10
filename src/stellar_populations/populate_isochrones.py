@@ -95,10 +95,10 @@ def populate_isochrones(model):
     model.parameters['AMR_grid']['met_scale']+'.m'+ \
     model.parameters['AMR_grid']['met_min']+'.m'+ \
     model.parameters['AMR_grid']['met_max']+'.n'+ \
-    model.parameters['AMR_grid']['n_met']+'.h5'
+    model.parameters['AMR_grid']['n_met']
 
-    fn = model.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask
-    fno = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
+    fn = model.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask +'.h5'
+    fno = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask +'.phot_err'+model.parameters['SSP']['phot_err']+'.h5'
 
     mkdir(model.parameters['General']['path']+'/dat/isochrones_sampled')
     

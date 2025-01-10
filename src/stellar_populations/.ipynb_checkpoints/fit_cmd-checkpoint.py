@@ -19,10 +19,10 @@ def read_isochrones(model):
     model.parameters['AMR_grid']['met_scale']+'.m'+ \
     model.parameters['AMR_grid']['met_min']+'.m'+ \
     model.parameters['AMR_grid']['met_max']+'.n'+ \
-    model.parameters['AMR_grid']['n_met']+'.h5'
+    model.parameters['AMR_grid']['n_met'] +'.phot_err'+model.parameters['SSP']['phot_err'] +'.h5'
 
     fn = model.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask
-
+    
     with pd.HDFStore(fn, mode='r') as store:
         keys = store.keys()
 
@@ -110,6 +110,7 @@ def fit_cmd(model):
     if model.parameters['Fitting']['initial_guess']=='none':     
         print('Uniform initial guess')
         w0 = AGE/AGE
+        # w0 = 1+AGE
         e_w0 = np.exp(w0)
         test_CMD = isochrones.T @ e_w0
         e_w0 = e_w0 / test_CMD.sum() * len(test_CMD)
