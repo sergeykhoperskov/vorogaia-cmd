@@ -11,7 +11,7 @@ from ezpadova import parsec, get_one_isochrone
 from IPython.display import clear_output
 
 
-def interpolate_magnitudes(iso,df,err):
+def interpolate_magnitudes(iso,df,err,xs,ys):
 
     binary_indices = df['secondary_mass']>0
     
@@ -26,12 +26,15 @@ def interpolate_magnitudes(iso,df,err):
 
         rng = np.random.default_rng(42+o)
         df[i] = df[i] + rng.normal(0, err, len(df))
-        
-    ind = (~np.isnan(df['Gmag'])) & (~np.isnan(df['G_RPmag'])) & (~np.isnan(df['G_BPmag'])) & \
-                (df['Gmag']<5) & (df['G_BPmag']-df['G_RPmag']>-0.5) & (df['G_BPmag']-df['G_RPmag']<2.5)
+
+    df['Gmag'] = df['Gmag'] - ys
+    df['Colour'] = df['G_BPmag']-df['G_RPmag'] - xs
     
-    print('final number of stars=',sum(ind))
-    return df['Gmag'][ind].values, df['G_BPmag'][ind].values-df['G_RPmag'][ind].values, df['secondary_mass'][ind].values/df['primary_mass'][ind].values
+    ind = (~np.isnan(df['Gmag'])) & (~np.isnan(df['G_RPmag'])) & (~np.isnan(df['G_BPmag'])) & \
+                (df['Gmag']<5) & (df['Colour']>-0.5) & (df['Colour']<2.5)
+    
+    # print('final number of stars=',sum(ind))
+    return df['Gmag'][ind].values, df['Colour'][ind].values, df['secondary_mass'][ind].values/df['primary_mass'][ind].values
 
 def check_isochrones(fn):
     if file_exists(fn):
@@ -91,7 +94,11 @@ def populate_isochrones(model):
     
     fn = model.isochrones_download_file_name
     fno = model.isochrones_sampled_file_name
+    mno = model.isochrones_sampled_figs_folder
     
+    print(fno)
+    print(mno)
+
     mkdir(model.parameters['General']['path']+'/dat/isochrones_sampled')
     
     file_is_ready = check_isochrones(fn)
@@ -113,16 +120,7 @@ def populate_isochrones(model):
     
     df_ssp2 = get_binary_ssp(model)
 
-    mn = 'mn'+\
-            '.SN' + model.parameters['CMD_grid']['sn']+\
-            '.SCALE.' + model.parameters['CMD_grid']['scale']+\
-            '.IMF.' + model.parameters['SSP']['imf_type']+\
-            '.mas.'+model.parameters['SSP']['ssp_mass']+\
-            '.bf.'+model.parameters['SSP']['binary_frac']+\
-            '.qmin.'+model.parameters['SSP']['min_binary_mass_ratio']+\
-            '.phot_err' + model.parameters['SSP']['phot_err'] +'.'+str(len(grid))
-
-    mkdir(model.parameters['General']['path']+'/figs/'+mn)
+    mkdir(mno)
 
     if file_exists(fno):
          with pd.HDFStore(fno, mode='r') as store:
@@ -146,26 +144,29 @@ def populate_isochrones(model):
         
         return
 
+    
     progress_bar = tqdm(total=len(grid), desc="Processing")
     
     o=-1
     for lab,age,met in zip(grid['labels'],grid['ages'],grid['mets']):
         o=o+1
         progress_bar.update(1)
-        print(lab)
+        # print(lab)
         if '/'+lab in keys:
-            print('already exists')
+            # print(lab, 'already exists')
             continue
         
             
-        df = pd.read_hdf(fn,key=lab,mode='a')
-        gmag, bprp, mass_ratio = interpolate_magnitudes(df,df_ssp2,float(model.parameters['SSP']['phot_err']))
+        # df = pd.read_hdf(fn,key=lab,mode='a')
+        df = pd.read_hdf(fn,key=lab) # check this!!
+            
+        gmag, bprp, mass_ratio = interpolate_magnitudes(df,df_ssp2,float(model.parameters['SSP']['phot_err']),
+                                                        float(model.parameters['SSP']['xs']),float(model.parameters['SSP']['ys']))
 
         zz = make_vor_density(pts,bprp,gmag)
-
         dftmp['zz'] = zz
-
         dftmp.to_hdf(fno,key=lab)
+
         
         if o%int(model.parameters['AMR_grid']['save_isochrone_figs'])==0:
             
@@ -188,6 +189,6 @@ def populate_isochrones(model):
             axes[1].set_ylabel("Gmag [mag]", fontsize=14)
             # cbar = plt.colorbar(tpc, ax=axes[1])
     
-            plt.savefig(model.parameters['General']['path']+'/figs/'+mn+'/isochrone.'+lab+'.jpg') 
+            plt.savefig(mno+'/isochrone.'+lab+'.jpg') 
             plt.close()
 

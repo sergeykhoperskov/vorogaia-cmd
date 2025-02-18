@@ -9,7 +9,7 @@ import configparser
 import time
 from tqdm import tqdm
 import numpy as np
-
+import pandas as pd
 
 class StellarPopulationModel:
     """A class template for Stellar Population Modeling."""
@@ -48,16 +48,22 @@ class StellarPopulationModel:
             self.parameters['AMR_grid']['met_max']+'.n'+ \
             self.parameters['AMR_grid']['n_met']
         
-        self.isochrones_download_file_name = self.parameters['General']['path']+'/dat/isochrones_download/iso.age.'+ file_mask + '.h5'
-        self.isochrones_sampled_file_name = self.parameters['General']['path']+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask + \
-        '.bf'+self.parameters['SSP']['binary_frac']+ \
-        '.phot_err'+self.parameters['SSP']['phot_err'] + \
-        '.SN' + self.parameters['CMD_grid']['sn'] + \
-        '.SCALE.' + self.parameters['CMD_grid']['scale'] + \
-        '.'+self.parameters['SSP']['imf_type']+self.parameters['SSP']['ssp_mass']+'.h5'
+        tmp = \
+            '.bf'+self.parameters['SSP']['binary_frac']+ \
+            '.phot_err'+self.parameters['SSP']['phot_err'] + \
+            '.SN' + self.parameters['CMD_grid']['sn'] + \
+            '.SCALE.' + self.parameters['CMD_grid']['scale'] + \
+            '.'+self.parameters['SSP']['imf_type'] +\
+            '.'+self.parameters['SSP']['ssp_mass'] +\
+            '.xs.'+self.parameters['SSP']['xs'] +\
+            '.ys.'+self.parameters['SSP']['ys']
+
+        path = self.parameters['General']['path']
+        self.isochrones_download_file_name = path+'/dat/isochrones_download/iso.age.'+ file_mask +'.'+self.parameters['AMR_grid']['model']+'.h5'
+        self.isochrones_sampled_file_name = path+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask + tmp +'.'+self.parameters['AMR_grid']['model']+'.h5'
+        self.isochrones_sampled_figs_folder = path+'/figs/isochrones.'+ file_mask + tmp + '.'+self.parameters['AMR_grid']['model']+'/'        
     
-        # asdfasdfasdf
-        
+    
     # # Define methods as placeholders to call external implementations
     def initialize_ssp(self):
         initialize_ssp(self)

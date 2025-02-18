@@ -74,12 +74,12 @@ def sample_kroupa_imf(total_mass,m_min=0.01,m_max=100):
     masses = []
     current_mass = 0
     while current_mass < total_mass:
-        progress_bar.update(current_mass/total_mass)
         m = np.random.uniform(m_min, m_max)
         p = np.random.uniform(0, 1)
         if p < kroupa_pdf(m):
             masses.append(m)
             current_mass += m
+            progress_bar.update(m)
     return np.array(masses)
 
 def sample_salpeter_imf(total_mass, m_min=0.1, m_max=100):
@@ -100,12 +100,13 @@ def sample_salpeter_imf(total_mass, m_min=0.1, m_max=100):
     masses = []
     current_mass = 0
     while current_mass < total_mass:
-        progress_bar.update(current_mass/total_mass)
+        
         m = np.random.uniform(m_min, m_max)
         p = np.random.uniform(0, 1)
         if p < salpeter_pdf(m) / salpeter_pdf(m_min):  # Normalize PDF
             masses.append(m)
             current_mass += m
+            progress_bar.update(m)
     return np.array(masses)
 
 
@@ -132,10 +133,10 @@ def sample_chabrier_imf(total_mass, m_min=0.01, m_max=100):
     masses = []
     current_mass = 0
     while current_mass < total_mass:
-        progress_bar.update(current_mass/total_mass)
         m = np.random.uniform(m_min, m_max)
         p = np.random.uniform(0, 1)
         if p < chabrier_pdf(m) / chabrier_pdf(m_min):  # Normalize PDF
             masses.append(m)
             current_mass += m
+            progress_bar.update(m)
     return np.array(masses)
