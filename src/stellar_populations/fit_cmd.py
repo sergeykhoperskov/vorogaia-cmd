@@ -14,15 +14,14 @@ from scipy.ndimage import gaussian_filter1d
 def read_isochrones(model):
 
     fn = model.isochrones_sampled_file_name
+    
     print(fn)
+    
     with pd.HDFStore(fn, mode='r') as store:
         keys = store.keys()
 
     amr_grid = pd.read_hdf(fn,key='grid');
     cmd_grid = pd.read_hdf(fn,key='grid_cmd');
-
-    print(len(amr_grid))
-    print(len(keys))
     
     if len(amr_grid) == len(keys)-2:
         print('The file contains all isochrones')
@@ -150,24 +149,32 @@ def fit_cmd(model):
         figname_out0 = fn0+'/solution' 
         sol_file_name = fn1+'/solution.h5'
 
-    # if file_exists(sol_file_name):
-    #     if yes_no_input("Do you want to rerun model with the same name y/n?"):
-    #         print(" Rerunning model ",model.parameters['Fitting']['model_name'])
-    #     else:
-    #         print(" END ")
-    #         return 0
             
 
     print('RUNNING THE MODEL:',sol_file_name)
+
+    new_run_flag = True
     
     if file_exists(sol_file_name):
         print('The model already exists')
 
-        initial_iteration, w0, hist = read_solution(sol_file_name, model.parameters)
-        test_CMD = isochrones.T @ np.exp(w0)
+        # if yes_no_input("Do you want to rerun model with the same name y/n?"):
+        #     print(" Rerunning model ",model.parameters['Fitting']['model_name'])
         
-        initial_iteration = initial_iteration + 1
-    else:
+        #     new_run_flag = True
+            
+        # else:
+        if True:
+            initial_iteration, w0, hist = read_solution(sol_file_name, model.parameters)
+            
+            test_CMD = isochrones.T @ np.exp(w0)
+            
+            initial_iteration = initial_iteration + 1
+            
+            new_run_flag = False
+            
+    
+    if new_run_flag:
         
         print('Running a new model')
         

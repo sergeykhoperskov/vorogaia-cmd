@@ -107,7 +107,7 @@ def populate_isochrones(model):
         print('Going to bin isochrones to voronoi grid')
         grid = pd.read_hdf(fn,key='grid')    
     else:
-        print('Please re-run initialize_isochrones()')
+        # print('Please re-run initialize_isochrones()')
         grid = pd.read_hdf(fn,key='grid')    
         # self.initialize_isochrones(model)
 
