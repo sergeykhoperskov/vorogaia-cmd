@@ -194,7 +194,7 @@ def fit_cmd(model):
             w0 = []
             if model.parameters['Fitting']['initial_guess']=='uniform':     
                 print('Uniform initial guess')
-                w0 = AGE/AGE
+                w0 = AGE/AGE * np.gradient(AGE)
                 w0 = np.log10(1+AGE)
             
             if model.parameters['Fitting']['initial_guess']=='blob':  
@@ -203,13 +203,13 @@ def fit_cmd(model):
             
             if model.parameters['Fitting']['initial_guess']=='gradient':  
                 print('Gradient initial guess')
-                w0 = (1+10*AGE)**2
+                w0 = (1+10*AGE)**2 * np.gradient(AGE)
                 w0 = np.log10(1+AGE)
     
             if len(w0)==0:
                 print('!! ERROR in the initial guess !!')
                 print('Will proceed with the Uniform weights')
-                w0 = AGE/AGE
+                w0 = AGE/AGE * np.gradient(AGE)
                 w0 = np.log10(1+AGE)
                 
             e_w0 = np.exp(w0)

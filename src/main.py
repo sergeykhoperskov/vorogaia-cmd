@@ -26,6 +26,9 @@ def main(config_file_name):
     # make a fit
     model.fit_cmd()
 
+    print("The model finished")
+    
+    sys.exit(1)
 
 if __name__ == "__main__":
 

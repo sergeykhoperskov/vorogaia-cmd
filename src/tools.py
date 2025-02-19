@@ -161,7 +161,7 @@ def make_vor_density(pts,x0,y0,m=[]):
 
     return zz
 
-def plot_vor_density2(ax,pts,zz,vals,tit,scale='log'):
+def plot_vor_density2(ax,pts,zz,vals,tit,scale='log',nc=100):
 
     nv = len(pts[:,0])
 
@@ -175,8 +175,9 @@ def plot_vor_density2(ax,pts,zz,vals,tit,scale='log'):
 
     zz[zz<vals[0]] = vals[0]
     zz[zz>vals[1]] = vals[1]
+    # zz[np.isnan(zz)] = vals[0] # ??
     
-    mapper = cm.ScalarMappable(norm=norm, cmap=myjet())
+    mapper = cm.ScalarMappable(norm=norm, cmap=myjet(nc))
   
     for j in range(0,nv):
         region = vor.regions[vor.point_region[j]]
@@ -202,25 +203,34 @@ def plot_vor_density2(ax,pts,zz,vals,tit,scale='log'):
 def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
     fig, axes = plt.subplots(2, 3, figsize=(22, 12))
 
-    plot_vor_density2(axes[0, 0],np.column_stack((px, py)),y0,[y0.max()*1e-3,y0.max()],'Gaia CMD',scale='log')
-    
-    plot_vor_density2(axes[0, 1],np.column_stack((px, py)),y1,[y0.max()*1e-3,y0.max()],'Current solution',scale='log')
+    cmd_density_scale = y0[y0>0].min()/y0.max()
+
+    y0[y0<y0.max()*cmd_density_scale] = 0.0 # ???
+    plot_vor_density2(axes[0, 0],np.column_stack((px, py)),y0,[y0.max()*cmd_density_scale,y0.max()],'Gaia CMD '+str(int(sum(y0>0))),scale='log')
+
+    y1[y0==0] = 0.0 # ???
+    plot_vor_density2(axes[0, 1],np.column_stack((px, py)),y1,[y0.max()*cmd_density_scale,y0.max()],'Current solution',scale='log')
     
     tmp = y0-y1
-    plot_vor_density2(axes[0, 2],np.column_stack((px, py)),tmp,[-np.max(np.abs(tmp)), np.max(np.abs(tmp))],'Residuals',scale='lin')
+    # ind = np.abs(tmp)>0
+    plot_vor_density2(axes[0, 2],np.column_stack((px, py)),tmp,[-np.max(np.abs(tmp)), np.max(np.abs(tmp))],'Gaia-Solution',scale='lin')
    
     tmp = tmp/np.sqrt(y0)
-    tmp[y0/y0.max()<1e-3] = np.nan
-    plot_vor_density2(axes[1, 0],np.column_stack((px, py)),tmp,[-np.max(np.abs(tmp)), np.max(np.abs(tmp))],'Relative residuals',scale='lin')
+    tmp[y0/y0.max()<cmd_density_scale] = np.nan
+    # ind = np.abs(tmp)>0
+    plot_vor_density2(axes[1, 0],np.column_stack((px, py)),tmp,[-np.max(np.abs(tmp)), np.max(np.abs(tmp))],'(Gaia-Solution)/sqrt(Gaia)',scale='lin',nc=21)
 
     triang = tri.Triangulation(age, met)
-        
-    tpc = axes[1, 1].tripcolor(triang, np.log10(w1), shading='flat', cmap=myjet())
+
+    tmp = np.log10(w1)
+    tmp[tmp.max()-tmp>4] = tmp.max()-4
+    tpc = axes[1, 1].tripcolor(triang, tmp, shading='flat', cmap=myjet())
     cbar = plt.colorbar(tpc, ax=axes[1, 1])
 
     data = pd.DataFrame({'age': age, 'weight': w1})
     summed_weights = data.groupby('age')['weight'].sum().reset_index()
-    values = summed_weights['weight']/np.max(summed_weights['weight'])-2
+    values = summed_weights['weight']/np.gradient(summed_weights['age'].values)
+    values = values/np.max(values)+met.min()
     
     axes[1,1].plot(summed_weights['age'].values,values,c='k',linewidth=3)
     axes[1,1].set_xlim(0,14)
@@ -228,6 +238,7 @@ def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
     axes[1, 1].set_xlabel('Age [Gyr]', fontsize=14)
     axes[1, 1].set_ylabel('Metallicity [dex]', fontsize=14)
     axes[1, 1].set_title('log10(weights)', fontsize=14)
+    # axes[1, 1].clim(np.log10(w1.max()*1e-5),np.log10(w1.max()))
     
     im1 = axes[1, 2].plot(hist[-50000:-1])
     axes[1, 2].set_yscale('log')
