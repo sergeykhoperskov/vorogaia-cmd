@@ -55,8 +55,29 @@ def read_cmd_to_fit(model):
     else:
         print('ERROR, no CMD to fit')
 
+def read_solution(fn, parameters):
 
-def save_solution(iter, parameters,fnout,pts_x,pts_y,gaia_CMD_to_fit,w0,weights,isochrones2,age,met):
+    iteration = pd.read_hdf(fn,key='iteration').values[0]
+    
+    if iteration == int(parameters['Fitting']['max_step']):
+        print('The desired solution already exists. Exit')
+        sys.exit(1)
+    else:
+        print('The file containes iteration=',iteration)
+        print('Will continue from the current solution')
+        
+        if parameters['Fitting']['save_each_step']=='yes':
+            dd = pd.read_hdf(fn,key='sol'+str(iteration))
+        else:
+            dd = pd.read_hdf(fn,key='sol')
+
+        w0 = dd['w'].values
+
+        dd = pd.read_hdf(fn,key='history')
+        
+    return iteration, w0, dd['history'].values.tolist()
+
+def save_solution(iter, parameters,fnout,pts_x,pts_y,gaia_CMD_to_fit,w0,weights,isochrones2,age,met,hist):
     
     sol = pd.DataFrame()
     sol['GaiaCMD'] = gaia_CMD_to_fit
@@ -81,6 +102,13 @@ def save_solution(iter, parameters,fnout,pts_x,pts_y,gaia_CMD_to_fit,w0,weights,
     sol = pd.DataFrame(isochrones2)
     sol.to_hdf(fnout,key='isochrones')
 
+    sol = pd.DataFrame()
+    sol['history'] = hist
+    sol.to_hdf(fnout,key='history')
+
+    with pd.HDFStore(fnout, mode="a") as store:
+        store.put("iteration", pd.Series([iter]), format="table")
+              
     
 
 def fit_cmd(model):
@@ -129,76 +157,70 @@ def fit_cmd(model):
     #         print(" END ")
     #         return 0
             
-    copy_file(model.config_file_name,fn1)
-
 
     print('RUNNING THE MODEL:',sol_file_name)
     
-    # if file_exists(sol_file_name):
-    #     print('The solution exists')
-    #     with pd.HDFStore(sol_file_name, mode='r') as store:
-    #         keys = store.keys()
+    if file_exists(sol_file_name):
+        print('The model already exists')
 
-    #     print(keys)
-    #     i = int(model.parameters['Fitting']['max_step'])-1
-    #     print(i,'/sol'+str(i))
-    #     if '/sol'+str(i) in keys:
-    #         print('The iteration exists. Done')        
-    #         return        
-
-    if file_exists(model.parameters['Fitting']['initial_guess']):
-        with pd.HDFStore(model.parameters['Fitting']['initial_guess'], mode='r') as store:
-            keys = store.keys()        
-
-        print('Will use an initial guess from ',model.parameters['Fitting']['initial_guess'],'iteration',keys[-1])
-        a = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key=keys[-1])
-        w0 = a['w'].values
+        initial_iteration, w0, hist = read_solution(sol_file_name, model.parameters)
         test_CMD = isochrones.T @ np.exp(w0)
-    else:    
-        w0 = []
-        if model.parameters['Fitting']['initial_guess']=='uniform':     
-            print('Uniform initial guess')
-            w0 = AGE/AGE
-            w0 = np.log10(1+AGE)
         
-        if model.parameters['Fitting']['initial_guess']=='blob':  
-            print('Blob initial guess')
-            w0 = np.log10( np.exp(-((AGE-11)/2.4)**2) * np.exp(-((MET+0.5)/0.1)**2) )
+        initial_iteration = initial_iteration + 1
+    else:
         
-        if model.parameters['Fitting']['initial_guess']=='gradient':  
-            print('Gradient initial guess')
-            w0 = (1+10*AGE)**2
-            w0 = np.log10(1+AGE)
-
-        if len(w0)==0:
-            print('!! ERROR in the initial guess !!')
-            print('Will proceed with the Uniform weights')
-            w0 = AGE/AGE
-            w0 = np.log10(1+AGE)
-            
-        e_w0 = np.exp(w0)
-        test_CMD = isochrones.T @ e_w0
-        e_w0 = e_w0 / test_CMD.sum() * len(test_CMD)
-        test_CMD = isochrones.T @ e_w0
-        w0 = np.log(e_w0)
-
-                    
+        print('Running a new model')
+        
+        copy_file(model.config_file_name,fn1)
+        
+        initial_iteration = 1
+        
+        if file_exists(model.parameters['Fitting']['initial_guess']):
+            with pd.HDFStore(model.parameters['Fitting']['initial_guess'], mode='r') as store:
+                keys = store.keys()        
     
-    figname_out = figname_out0+'.0000000.jpg' 
-
-    plot_solution(pts_x, pts_y, gaia_cmd, test_CMD,AGE,MET,np.exp(w0),np.exp(w0),[0],figname_out)
-
+            print('Will use an initial guess from ',model.parameters['Fitting']['initial_guess'],'iteration',keys[-1])
+            a = pd.read_hdf(model.parameters['Fitting']['initial_guess'],key=keys[-1])
+            w0 = a['w'].values
+            test_CMD = isochrones.T @ np.exp(w0)
+        else:    
+            w0 = []
+            if model.parameters['Fitting']['initial_guess']=='uniform':     
+                print('Uniform initial guess')
+                w0 = AGE/AGE
+                w0 = np.log10(1+AGE)
+            
+            if model.parameters['Fitting']['initial_guess']=='blob':  
+                print('Blob initial guess')
+                w0 = np.log10( np.exp(-((AGE-11)/2.4)**2) * np.exp(-((MET+0.5)/0.1)**2) )
+            
+            if model.parameters['Fitting']['initial_guess']=='gradient':  
+                print('Gradient initial guess')
+                w0 = (1+10*AGE)**2
+                w0 = np.log10(1+AGE)
+    
+            if len(w0)==0:
+                print('!! ERROR in the initial guess !!')
+                print('Will proceed with the Uniform weights')
+                w0 = AGE/AGE
+                w0 = np.log10(1+AGE)
+                
+            e_w0 = np.exp(w0)
+            test_CMD = isochrones.T @ e_w0
+            e_w0 = e_w0 / test_CMD.sum() * len(test_CMD)
+            test_CMD = isochrones.T @ e_w0
+            w0 = np.log(e_w0)            
+    
+        figname_out = figname_out0+'.0000000.jpg' 
+        plot_solution(pts_x, pts_y, gaia_cmd, test_CMD,AGE,MET,np.exp(w0),np.exp(w0),[0],figname_out)
+        hist = []    
+    
     ind = (all_isochrones==0) | (gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']))
     gaia_cmd[ind] = 0
     isochrones2 = isochrones.copy()
     isochrones2[:,ind] = 0
-
-    nsave = int(model.parameters['Fitting']['nsave'])
-    hist = []
     
-    eps = float(model.parameters['Fitting']['eps'])
-    
-    for i in range(1,int(model.parameters['Fitting']['max_step'])):
+    for i in range(initial_iteration,int(model.parameters['Fitting']['max_step'])+1):
 
         # ampl = np.median(10**w0)*0.01
         # extra =  ampl * (2*np.random.rand(len(w0))-1)
@@ -211,10 +233,11 @@ def fit_cmd(model):
 
         print(model.parameters['Fitting']['model_name']+'.'+date_time_str,'running iteration ',i,' out of ',model.parameters['Fitting']['max_step'])
         figname_out = figname_out0 +'.'+ str(i).zfill(7)+'.jpg'
-        current_weights,hist0 = solver(pts_x, pts_y, isochrones2.T, w0, gaia_cmd, eps, nsave,fittype=model.parameters['Fitting']['fittype'])
+        current_weights,hist0 = solver(pts_x, pts_y, isochrones2.T, w0, gaia_cmd, float(model.parameters['Fitting']['eps']), 
+                                       int(model.parameters['Fitting']['nsave']),fittype=model.parameters['Fitting']['fittype'])
         hist.extend(hist0)
         plot_solution(pts_x, pts_y, gaia_cmd, isochrones2.T @ np.exp(current_weights),AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out)
-        save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd,w0,current_weights,isochrones2,AGE,MET)
+        save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd,w0,current_weights,isochrones2,AGE,MET,hist)
         w0 = current_weights
         
 

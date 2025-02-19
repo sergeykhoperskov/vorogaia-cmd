@@ -10,7 +10,7 @@ import ezbasti
 
 
 def interpolate_isochrone(x,y):
-    fn = '/Users/skhoperskov/Dropbox/PythonScripts/vorogaia-cmd/dat/isochrones_download/All.Basti.h5'
+    fn = '../dat/isochrones_download/All.Basti.h5'
     
     grid = pd.read_hdf(fn,key='grid')
     
