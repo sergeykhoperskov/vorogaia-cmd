@@ -205,10 +205,10 @@ def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
 
     cmd_density_scale = y0[y0>0].min()/y0.max()
 
-    y0[y0<y0.max()*cmd_density_scale] = 0.0 # ???
+    # y0[y0<y0.max()*cmd_density_scale] = 0.0 # ???
     plot_vor_density2(axes[0, 0],np.column_stack((px, py)),y0,[y0.max()*cmd_density_scale,y0.max()],'Gaia CMD '+str(int(sum(y0>0))),scale='log')
 
-    y1[y0==0] = 0.0 # ???
+    # y1[y0==0] = 0.0 # ???
     plot_vor_density2(axes[0, 1],np.column_stack((px, py)),y1,[y0.max()*cmd_density_scale,y0.max()],'Current solution',scale='log')
     
     tmp = y0-y1
@@ -291,7 +291,7 @@ def mean_squared_error(m_stat,X,y):
                  
     return np.sum((function(m_stat,X,y)**2),axis = 0) / len(X)
 
-def solver(pts_x,pts_y, X, m_stat, y, eps, max_counter,fittype='abs'):
+def solver(X, m_stat, y, eps, max_counter,fittype='abs'):
   
     hist = []
     

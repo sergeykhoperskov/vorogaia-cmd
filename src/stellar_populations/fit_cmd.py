@@ -199,12 +199,14 @@ def fit_cmd(model):
             
             if model.parameters['Fitting']['initial_guess']=='blob':  
                 print('Blob initial guess')
-                w0 = np.log10( np.exp(-((AGE-11)/2.4)**2) * np.exp(-((MET+0.5)/0.1)**2) )
+                w0 = np.log10( np.exp(-((AGE-11)/2.5)**2) * np.exp(-((MET+0.5)/0.1)**2) )
             
             if model.parameters['Fitting']['initial_guess']=='gradient':  
                 print('Gradient initial guess')
-                w0 = (1+10*AGE)**2 * np.gradient(AGE)
-                w0 = np.log10(1+AGE)
+                
+                w0 = (0.01+10*AGE**2) #* np.gradient(AGE)
+                w0 = np.log10(w0)
+                # w0 = np.log10(1+AGE)
     
             if len(w0)==0:
                 print('!! ERROR in the initial guess !!')
@@ -219,32 +221,33 @@ def fit_cmd(model):
             w0 = np.log(e_w0)            
     
         figname_out = figname_out0+'.0000000.jpg' 
-        plot_solution(pts_x, pts_y, gaia_cmd, test_CMD,AGE,MET,np.exp(w0),np.exp(w0),[0],figname_out)
+        plot_solution(pts_x, pts_y, gaia_cmd.copy(), test_CMD,AGE,MET,np.exp(w0),np.exp(w0),[0],figname_out)
         hist = []    
+
     
-    ind = (all_isochrones==0) | (gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']))
-    gaia_cmd[ind] = 0
+    
+    ind = (all_isochrones==0) | ( gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']) ) | (pts_y>4.5)
+    # ind = ( gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']) )
+    # print(sum(ind))
+    gaia_cmd[ind] = 0    
     isochrones2 = isochrones.copy()
     isochrones2[:,ind] = 0
-    
+
     for i in range(initial_iteration,int(model.parameters['Fitting']['max_step'])+1):
-
-        # ampl = np.median(10**w0)*0.01
-        # extra =  ampl * (2*np.random.rand(len(w0))-1)
-        # extra = gaussian_filter1d(extra, sigma=3)
-        # w0 = w0 + np.exp(extra)
-        
-        # noise_amplitude = (w0.max()-w0.min())*0.02
-        # w0 = w0 + np.random.uniform(-noise_amplitude, noise_amplitude, size=w0.shape)
-        
-
+        print(gaia_cmd)
+        print(gaia_cmd[gaia_cmd>0].min()/gaia_cmd.max())
         print(model.parameters['Fitting']['model_name']+'.'+date_time_str,'running iteration ',i,' out of ',model.parameters['Fitting']['max_step'])
         figname_out = figname_out0 +'.'+ str(i).zfill(7)+'.jpg'
-        current_weights,hist0 = solver(pts_x, pts_y, isochrones2.T, w0, gaia_cmd, float(model.parameters['Fitting']['eps']), 
+        
+        current_weights,hist0 = solver(isochrones2.T, w0, gaia_cmd, float(model.parameters['Fitting']['eps']), 
                                        int(model.parameters['Fitting']['nsave']),fittype=model.parameters['Fitting']['fittype'])
         hist.extend(hist0)
-        plot_solution(pts_x, pts_y, gaia_cmd, isochrones2.T @ np.exp(current_weights),AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out)
-        save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd,w0,current_weights,isochrones2,AGE,MET,hist)
+        
+        plot_solution(pts_x, pts_y, gaia_cmd.copy(), isochrones2.T @ np.exp(current_weights), 
+                      AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out)
+        
+        save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd.copy(),w0,current_weights,isochrones2,AGE,MET,hist)
+        
         w0 = current_weights
         
 

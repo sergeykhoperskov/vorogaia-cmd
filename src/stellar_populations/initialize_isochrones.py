@@ -9,14 +9,28 @@ from isochrones.mist import MIST_Isochrone
 import ezbasti
 
 
-def interpolate_isochrone(x,y):
-    fn = '../dat/isochrones_download/All.Basti.h5'
-    
+def interpolate_isochrone(x,y,iso_model):
+    if iso_model == 'Basti':
+        fn = '../dat/isochrones_download/All.Basti.h5'
+        n = 2100
+    if iso_model == 'Padova':
+        fn = '../dat/isochrones_download/iso.age.log.a0.01.a13.7.n272.met.lin.m-2.0.m0.5.n48.Padova.h5'
+        n = 275
+        if x==0.01:
+            x=0.01001
+        if x==13.7:
+            x=13.7 - 0.001
+        if y==-2:
+            x=-2 + 0.001
+        if y==0.5:
+            x=0.5 - 0.001
+        lklklkj
+
     grid = pd.read_hdf(fn,key='grid')
     
     X = grid['ages'].unique()
     Y = grid['mets'].unique()
-
+   
     i = np.searchsorted(X, x) - 1
     j = np.searchsorted(Y, y) - 1
     
@@ -42,7 +56,7 @@ def interpolate_isochrone(x,y):
     W = [w11,w12,w21,w22]
 
     dd = pd.DataFrame()
-    n = 2100
+    
     dd['Mini'] = np.linspace(x1,x2,n)
 
     for o in range(0,4):
@@ -187,12 +201,14 @@ def initialize_isochrones(model):
                 r = r.rename(columns={'initial_mass': 'Mini', 'G_mag': 'Gmag', 'BP_mag': 'G_BPmag', 'RP_mag': 'G_RPmag'})
 
             if model.parameters['AMR_grid']['model'] == 'Padova':
-                r = get_one_isochrone(age, met, photsys_file='YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat')
-
+#                r = get_one_isochrone(age, met, photsys_file='YBC_tab_mag_odfnew/tab_mag_gaiaEDR3.dat')
+                FE_H = np.log10(met/float(model.parameters['AMR_grid']['met_sun']))
+                r = interpolate_isochrone(age/1e9,FE_H,'Padova')
+                
             if model.parameters['AMR_grid']['model'] == 'Basti':
                
                 FE_H = np.log10(met/float(model.parameters['AMR_grid']['met_sun']))
-                r = interpolate_isochrone(age/1e9,FE_H)
+                r = interpolate_isochrone(age/1e9,FE_H,'Basti')
                
             r.to_hdf(fn,key=lab,mode='a')
 

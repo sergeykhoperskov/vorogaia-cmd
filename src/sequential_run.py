@@ -10,7 +10,7 @@ def main(config_file_name, new_params_file):
     # Read configuration file
     model.read_config(config_file_name)
 
-    df = pd.read_csv(new_params_file)
+    df = pd.read_csv(new_params_file,delimiter=' ')
     
     new_params_name = new_params_file.split(".")[0]
 
@@ -22,10 +22,11 @@ def main(config_file_name, new_params_file):
         fnout = new_params_name + '/'+new_params_name+str(I).zfill(4)+'.ini'
 
         for i in model.parameters.keys():
-            for j in model.parameters[i].keys(): 
+            for j in model.parameters[i].keys():
+                
                 if j in df.columns:
                     model.parameters[i][j] = df[j].iloc[I]
-        
+                    
         model.parameters['Fitting']['model_name'] = new_params_name+str(I).zfill(4)
         
         with open(fnout, "w") as file:  
