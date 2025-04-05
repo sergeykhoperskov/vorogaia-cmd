@@ -37,12 +37,8 @@ def read_isochrones(model):
 
 def read_cmd_to_fit(model):
 
-    if model.parameters['Fitting']['cmd_to_fit']=='default':
-        fn = model.parameters['General']['path']+'/dat/cmd_grid/gaia3_cmd_full_all_voron.SN.'+\
-          model.parameters['CMD_grid']['sn']+'.SCALE.'+model.parameters['CMD_grid']['scale']+'.h5'
-    else:
-        fn = model.parameters['Fitting']['cmd_to_fit']
-
+    fn = '../dat/cmd_grid/voronoi.'+model.parameters['Fitting']['cmd_to_fit']+'.h5'
+    
     if file_exists(fn):
         print('CMD to fit:',fn)
 
@@ -50,9 +46,32 @@ def read_cmd_to_fit(model):
 
         print('Size of the CMD:',len(tmp))
         
-        return tmp['pts_x'].values,tmp['pts_y'].values,tmp['dat'].values/tmp['dat'].values.sum()*len(tmp['dat'])
     else:
-        print('ERROR, no CMD to fit')
+        
+        print('No binned CMD, will read the data file and produce it.')
+        
+        fn2 = '../dat/gaia_samples/'+model.parameters['Fitting']['cmd_to_fit']+'.h5'
+                   
+        if file_exists(fn2):
+            
+            dftmp = pd.read_hdf(fn2,key='dat')
+            print(dftmp)
+            
+            pts = np.vstack((model.pts_df['pts_x'].values,model.pts_df['pts_y'].values)).T
+
+            tmp = pd.DataFrame()
+            tmp['pts_x'] = model.pts_df['pts_x'].copy()
+            tmp['pts_y'] = model.pts_df['pts_y'].copy()
+            
+            tmp['dat'] = make_vor_density(pts,dftmp['BP_RP'],dftmp['M_G'])
+
+            tmp.to_hdf(fn,key='dat')
+            
+        else:                
+            print('ERROR, no file to produce a binned CMD')
+           
+
+    return tmp['pts_x'].values, tmp['pts_y'].values, tmp['dat'].values / tmp['dat'].values.sum() * len(tmp['dat'])
 
 def read_solution(fn, parameters):
 
@@ -116,13 +135,12 @@ def fit_cmd(model):
     print(' ###############################################################\n')
 
     isochrones, AGE, MET = read_isochrones(model)
-
     all_isochrones = np.sum(isochrones, axis=0)
 
     pts_x,pts_y,gaia_cmd = read_cmd_to_fit(model)
 
     if len(gaia_cmd) == isochrones.shape[1]:
-        print('CMD size and isochrones size match')
+        print("The CMD's size and isochrones size match")
     else:        
         print('CMD size ',len(gaia_cmd),' and isochrones size',isochrones.shape[1],'do not match. Exit now!')
         return
@@ -172,8 +190,26 @@ def fit_cmd(model):
             initial_iteration = initial_iteration + 1
             
             new_run_flag = False
-            
+
+    #=========================================
+    #       setup isochrones
+    #=========================================
     
+    ind = (all_isochrones==0) | ( gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']) ) #| (pts_y>4.5)    
+    gaia_cmd[ind] = 0    
+    isochrones2 = isochrones.copy()
+    isochrones2[:,ind] = 0
+    
+    # gaia_cmd = gaia_cmd[~ind];    
+    # isochrones2 = isochrones[:,~ind].copy()
+    # pts_x = pts_x[~ind]
+    # pts_y = pts_y[~ind]
+    
+    ############################################
+    ### DECIDE WHETHER WE RESTART, 
+    ### OR START A NEW MODEL AND NEED TO DEAL 
+    ### WITH THE INITIAL GUESS
+    ############################################
     if new_run_flag:
         
         print('Running a new model')
@@ -195,48 +231,48 @@ def fit_cmd(model):
             if model.parameters['Fitting']['initial_guess']=='uniform':     
                 print('Uniform initial guess')
                 w0 = AGE/AGE * np.gradient(AGE)
-                w0 = np.log10(1+AGE)
+                w0 = np.log(AGE)
             
             if model.parameters['Fitting']['initial_guess']=='blob':  
                 print('Blob initial guess')
-                w0 = np.log10( np.exp(-((AGE-11)/2.5)**2) * np.exp(-((MET+0.5)/0.1)**2) )
+                w0 = np.log( np.exp(-((AGE-11)/2.5)**2) * np.exp(-((MET+0.5)/0.1)**2) )
             
             if model.parameters['Fitting']['initial_guess']=='gradient':  
                 print('Gradient initial guess')
                 
                 w0 = (0.01+10*AGE**2) #* np.gradient(AGE)
-                w0 = np.log10(w0)
+                w0 = np.log(w0)
                 # w0 = np.log10(1+AGE)
-    
+            
+            if model.parameters['Fitting']['initial_guess']=='cvxopt':
+                print('CVXopt initial guess')
+                w0,_ = solver(isochrones2.T, [], gaia_cmd, 0,0,'new')
+                
             if len(w0)==0:
                 print('!! ERROR in the initial guess !!')
                 print('Will proceed with the Uniform weights')
                 w0 = AGE/AGE * np.gradient(AGE)
-                w0 = np.log10(1+AGE)
+                w0 = np.log(1+AGE)
                 
             e_w0 = np.exp(w0)
-            test_CMD = isochrones.T @ e_w0
+            test_CMD = isochrones2.T @ e_w0
             e_w0 = e_w0 / test_CMD.sum() * len(test_CMD)
-            test_CMD = isochrones.T @ e_w0
+            test_CMD = isochrones2.T @ e_w0
             w0 = np.log(e_w0)            
-    
+
+        print(pts_x.shape, pts_y.shape, gaia_cmd.shape, test_CMD.shape, AGE.shape, MET.shape,w0.shape)
         figname_out = figname_out0+'.0000000.jpg' 
-        plot_solution(pts_x, pts_y, gaia_cmd.copy(), test_CMD,AGE,MET,np.exp(w0),np.exp(w0),[0],figname_out)
+        plot_solution(pts_x, pts_y, gaia_cmd.copy(), test_CMD, AGE, MET,np.exp(w0),np.exp(w0),[0],figname_out)
         hist = []    
-
     
-    
-    ind = (all_isochrones==0) | ( gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']) ) | (pts_y>4.5)
-    # ind = ( gaia_cmd/gaia_cmd.max()< float(model.parameters['Fitting']['cmd_density_range']) )
-    # print(sum(ind))
-    gaia_cmd[ind] = 0    
-    isochrones2 = isochrones.copy()
-    isochrones2[:,ind] = 0
 
+    ############################################
+    ### HERE WE RUN THE ITERATIONS
+    ############################################
     for i in range(initial_iteration,int(model.parameters['Fitting']['max_step'])+1):
-        print(gaia_cmd)
-        print(gaia_cmd[gaia_cmd>0].min()/gaia_cmd.max())
-        print(model.parameters['Fitting']['model_name']+'.'+date_time_str,'running iteration ',i,' out of ',model.parameters['Fitting']['max_step'])
+       
+        print(model.parameters['Fitting']['model_name']+' '+date_time_str,'running iteration ',i,' out of ',model.parameters['Fitting']['max_step'])
+       
         figname_out = figname_out0 +'.'+ str(i).zfill(7)+'.jpg'
         
         current_weights,hist0 = solver(isochrones2.T, w0, gaia_cmd, float(model.parameters['Fitting']['eps']), 
@@ -244,7 +280,7 @@ def fit_cmd(model):
         hist.extend(hist0)
         
         plot_solution(pts_x, pts_y, gaia_cmd.copy(), isochrones2.T @ np.exp(current_weights), 
-                      AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out)
+                      AGE,MET,np.exp(w0),np.exp(current_weights),hist,figname_out,model.parameters['Fitting']['model_name'])
         
         save_solution(i,model.parameters,sol_file_name,pts_x,pts_y,gaia_cmd.copy(),w0,current_weights,isochrones2,AGE,MET,hist)
         

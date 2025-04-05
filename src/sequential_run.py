@@ -33,7 +33,7 @@ def main(config_file_name, new_params_file):
             for i in model.parameters.keys():
                 file.write('['+ str(i) +']\n')
                 for j in model.parameters[i].keys():                    
-                    file.write(str(j)+'='+model.parameters[i][j]+'\n')
+                    file.write(str(j)+'='+str(model.parameters[i][j])+'\n')
                 file.write('\n')
             
 

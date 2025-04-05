@@ -53,6 +53,7 @@ class StellarPopulationModel:
             '.phot_err'+self.parameters['SSP']['phot_err'] + \
             '.SN' + self.parameters['CMD_grid']['sn'] + \
             '.SCALE.' + self.parameters['CMD_grid']['scale'] + \
+            '.nx.' + self.parameters['CMD_grid']['nx'] + \
             '.'+self.parameters['SSP']['imf_type'] +\
             '.'+self.parameters['SSP']['ssp_mass'] +\
             '.xs.'+self.parameters['SSP']['xs'] +\
@@ -60,10 +61,23 @@ class StellarPopulationModel:
 
         path = self.parameters['General']['path']
         self.isochrones_download_file_name = path+'/dat/isochrones_download/iso.age.'+ file_mask +'.'+self.parameters['AMR_grid']['model']+'.h5'
-        self.isochrones_sampled_file_name = path+'/dat/isochrones_sampled/iso_vor.age.'+ file_mask + tmp +'.'+self.parameters['AMR_grid']['model']+'.h5'
+        self.isochrones_sampled_file_name = path+'/dat/isochrones_sampled/new.iso_vor.age.'+ file_mask + tmp +'.'+self.parameters['AMR_grid']['model']+'.h5'
         self.isochrones_sampled_figs_folder = path+'/figs/isochrones.'+ file_mask + tmp + '.'+self.parameters['AMR_grid']['model']+'/'        
     
+
+        self.grid_file_name = self.parameters['General']['path']+\
+                                '/dat/cmd_grid/grid_voronoi.SN.'+\
+                                   self.parameters['CMD_grid']['sn']+'.SCALE.'+\
+                                    self.parameters['CMD_grid']['scale']+\
+                                '.nx.'+self.parameters['CMD_grid']['nx']
+
+        self.grid_figure_file_name = self.parameters['General']['path']+\
+                                '/figs/_cmds_to_fit/grid_voronoi.SN.'+\
+                                   self.parameters['CMD_grid']['sn']+'.SCALE.'+\
+                                    self.parameters['CMD_grid']['scale']+\
+                                '.nx.'+self.parameters['CMD_grid']['nx']
     
+        
     # # Define methods as placeholders to call external implementations
     def initialize_ssp(self):
         initialize_ssp(self)

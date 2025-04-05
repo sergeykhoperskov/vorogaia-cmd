@@ -13,6 +13,7 @@ from scipy.spatial import Voronoi, voronoi_plot_2d
 
 from scipy.optimize import minimize
 
+from cvxopt import matrix, solvers
 
 def yes_no_input(prompt):
     """
@@ -105,6 +106,7 @@ def make_voronoi(xx,yy, x0,y0, SCALE=1e6, targetSN=10):
     
     zz = np.array(tmp.T)+1
 
+    # zz = SCALE*zz/np.sum(zz)
     zz = SCALE*zz/np.sum(zz)
 
     xx,yy = np.meshgrid(xx,yy)
@@ -115,7 +117,6 @@ def make_voronoi(xx,yy, x0,y0, SCALE=1e6, targetSN=10):
 
     signal = zz**0.5
     noise = signal**0.5 
-
 
     out  = voronoi_2d_binning(xx, yy, signal, noise, targetSN, plot=0, quiet=1, wvt=True, pixelsize=1)
     binNum, xx1, yy1, xBar, yBar, sn, nPixels, scale = out
@@ -200,13 +201,13 @@ def plot_vor_density2(ax,pts,zz,vals,tit,scale='log',nc=100):
     ax.set_ylim(-5,5)
     ax.invert_yaxis()
 
-def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
+def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name,mn='Gaia CMD'):
     fig, axes = plt.subplots(2, 3, figsize=(22, 12))
 
     cmd_density_scale = y0[y0>0].min()/y0.max()
 
     # y0[y0<y0.max()*cmd_density_scale] = 0.0 # ???
-    plot_vor_density2(axes[0, 0],np.column_stack((px, py)),y0,[y0.max()*cmd_density_scale,y0.max()],'Gaia CMD '+str(int(sum(y0>0))),scale='log')
+    plot_vor_density2(axes[0, 0],np.column_stack((px, py)),y0,[y0.max()*cmd_density_scale,y0.max()],mn+' '+str(int(sum(y0>0))),scale='log')
 
     # y1[y0==0] = 0.0 # ???
     plot_vor_density2(axes[0, 1],np.column_stack((px, py)),y1,[y0.max()*cmd_density_scale,y0.max()],'Current solution',scale='log')
@@ -217,7 +218,7 @@ def plot_solution(px,py, y0, y1,age,met,w0,w1,hist,fig_name):
    
     tmp = tmp/np.sqrt(y0)
     tmp[y0/y0.max()<cmd_density_scale] = np.nan
-    # ind = np.abs(tmp)>0
+   
     plot_vor_density2(axes[1, 0],np.column_stack((px, py)),tmp,[-np.max(np.abs(tmp)), np.max(np.abs(tmp))],'(Gaia-Solution)/sqrt(Gaia)',scale='lin',nc=21)
 
     triang = tri.Triangulation(age, met)
@@ -314,8 +315,40 @@ def solver(X, m_stat, y, eps, max_counter,fittype='abs'):
         for counter in range(0,max_counter):
             m_stat = m_stat - eps * partial_derivative_rel(m_stat, X, y)    
             err = mean_squared_error_rel(m_stat, X, y)
-            hist.append(err)        
-                       
+            hist.append(err)
+
+    if fittype == 'new':
+
+        print('Ysize',y.shape, 'Xsize=',X.shape)
+        
+        # A_scaled = np.diag(1.0 / y) @ X           # D A
+        # b_scaled = np.ones_like(y)  # target vector is 1s
+
+        # print('Ysize',b_scaled.shape, 'Xsize=',A_scaled.shape)
+
+        # A_cvx = matrix(A_scaled)
+        # b_cvx = matrix(b_scaled)
+        
+        A_cvx = matrix(X)
+        b_cvx = matrix(y)
+        
+        P = A_cvx.T * A_cvx  
+        q = -A_cvx.T * b_cvx 
+        
+        G = matrix(-np.eye(X.shape[1]))  
+        h = matrix(np.zeros(X.shape[1])) 
+        
+        solvers.options['show_progress'] = True 
+        solvers.options['maxiters'] = 200
+    
+        solution = solvers.qp(P, q, G, h)
+        
+        m_stat = np.log(np.array(solution['x']).flatten())
+        print(m_stat)
+        
+        hist.append(mean_squared_error_rel(m_stat, X, y))
+        print('Error:',hist)
+        
     return m_stat, hist
 
 def nbt2den(x,y,z,x1,x2,y1,y2,n1,n2):
